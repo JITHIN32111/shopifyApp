@@ -1,19 +1,21 @@
-// App.jsx
-import { useEffect } from 'react';
+import React from 'react';
+import { useAppBridge } from '@shopify/app-bridge-react';
+import { AppProvider as PolarisProvider } from '@shopify/polaris';
+import en from '@shopify/polaris/locales/en.json';
+import Routes from './Routes';
 
-const App = () => {
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const shop = queryParams.get('shop');
-    const host = queryParams.get('host');
+export default function App() {
+  const shopify = useAppBridge(); // returns global shopify object
 
-    if (!shop || !host) {
-      // Redirect to auth endpoint if not installed or shop is missing
-      window.location.assign(`/api/auth?shop=${shop || ''}`);
-    }
-  }, []);
+  // Example of using toast
+  const handleClick = () => {
+    shopify.toast.show('✅ Hello from App Bridge v4!');
+  };
 
-  return <div>Loading...</div>;
-};
-
-export default App;
+  return (
+    <PolarisProvider i18n={en}>
+      <button onClick={handleClick}>Show Toast</button>
+      <Routes />
+    </PolarisProvider>
+  );
+}
