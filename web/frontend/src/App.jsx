@@ -14,7 +14,6 @@ export default function App() {
 
   return (
     <PolarisProvider i18n={en}>
-      <button onClick={handleClick}>Show Toast</button>
       <Routes />
     </PolarisProvider>
   );
