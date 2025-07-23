@@ -1,4 +1,26 @@
-roles = ["backend"]
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration  
+client_id = "d45af4c8b320f028b09ef266aa78775e" 
+name = "kkk" 
+handle = "kkk-12" 
+application_url = "https://bloggers-oo-challenge-cake.trycloudflare.com"
+embedded = true  
 
-[commands]
-dev = "npm run dev"
+[build] 
+include_config_on_deploy = true 
+automatically_update_urls_on_dev = true  
+
+[webhooks] 
+api_version = "2025-07"  
+
+[access_scopes] 
+scopes = "write_products"  
+
+[auth] 
+redirect_urls = [
+  "https://bloggers-oo-challenge-cake.trycloudflare.com/auth/callback", 
+  "https://bloggers-oo-challenge-cake.trycloudflare.com/auth/shopify/callback", 
+  "https://bloggers-oo-challenge-cake.trycloudflare.com/api/auth/callback"
+]  
+
+[pos] 
+embedded = false

@@ -7,7 +7,8 @@ import serveStatic from "serve-static";
 import shopify from "./shopify.js";
 import productCreator from "./product-creator.js";
 import PrivacyWebhookHandlers from "./privacy.js";
-
+import dotenv from 'dotenv';
+dotenv.config();
 const PORT = parseInt(
   process.env.BACKEND_PORT || process.env.PORT || "3000",
   10
@@ -16,7 +17,7 @@ const PORT = parseInt(
 const STATIC_PATH =
   process.env.NODE_ENV === "production"
     ? `${process.cwd()}/frontend/dist`
-    : `${process.cwd()}/frontend/`;
+    : `${process.cwd()}/frontend/dist`;
 
 const app = express();
 
@@ -80,11 +81,106 @@ app.post("/api/products", async (_req, res) => {
 app.use(shopify.cspHeaders());
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
-app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res, _next) => {
+// Handle app routing with proper shop parameter handling
+app.use("/*", async (req, res, next) => {
+  // Skip shop validation for auth routes, API routes, and static assets
+  if (req.path.startsWith('/api/') || 
+      req.path === shopify.config.auth.path || 
+      req.path === shopify.config.auth.callbackPath ||
+      req.path === shopify.config.webhooks.path ||
+      req.path.includes('.') || // Skip static files
+      req.path.startsWith('/assets/')) {
+    return next();
+  }
+  
+  console.log("Processing route:", req.path, "Query:", req.query);
+  
+  // Try to extract shop from various sources
+  let shop = req.query.shop;
+  
+  if (!shop) {
+    // Try to extract from headers (embedded app)
+    shop = req.get('x-shopify-shop-domain') || req.get('x-shop-domain');
+  }
+  
+  if (!shop) {
+    // Try to extract from referrer URL
+    const referer = req.get('referer');
+    if (referer) {
+      // First try to extract shop parameter from referrer query string
+      const refererUrl = new URL(referer);
+      const shopFromRefererQuery = refererUrl.searchParams.get('shop');
+      if (shopFromRefererQuery) {
+        shop = shopFromRefererQuery;
+        // Also extract other Shopify parameters from referrer
+        const host = refererUrl.searchParams.get('host');
+        const embedded = refererUrl.searchParams.get('embedded');
+        const locale = refererUrl.searchParams.get('locale');
+        const session = refererUrl.searchParams.get('session');
+        const timestamp = refererUrl.searchParams.get('timestamp');
+        const hmac = refererUrl.searchParams.get('hmac');
+        const id_token = refererUrl.searchParams.get('id_token');
+        
+        // Add all available Shopify parameters to current request
+        if (host) req.query.host = host;
+        if (embedded) req.query.embedded = embedded;
+        if (locale) req.query.locale = locale;
+        if (session) req.query.session = session;
+        if (timestamp) req.query.timestamp = timestamp;
+        if (hmac) req.query.hmac = hmac;
+        if (id_token) req.query.id_token = id_token;
+      } else {
+        // Fallback: extract from domain pattern
+        const shopMatch = referer.match(/https?:\/\/([^.]+\.myshopify\.com)/);
+        if (shopMatch) {
+          shop = shopMatch[1];
+        }
+      }
+    }
+  }
+  
+  if (shop) {
+    // Ensure shop is in query params for Shopify middleware
+    req.query.shop = shop;
+    console.log("SHOP found:", shop, "Query params:", Object.keys(req.query));
+    return shopify.ensureInstalledOnShop()(req, res, next);
+  } else {
+    // No shop found - this might be a direct access or development scenario
+    console.log("No shop parameter found. Request details:", {
+      path: req.path,
+      query: req.query,
+      headers: {
+        referer: req.get('referer'),
+        'user-agent': req.get('user-agent'),
+        'x-shopify-shop-domain': req.get('x-shopify-shop-domain')
+      }
+    });
+    
+    // Return a simple page asking for shop parameter or redirect to Shopify Partner dashboard
+    return res.status(400).send(`
+      <html>
+        <head>
+          <title>Shopify App</title>
+          <script>
+            // If we're in an iframe (embedded app), try to reload the parent
+            if (window.parent !== window) {
+              window.parent.location.reload();
+            }
+          </script>
+        </head>
+        <body>
+          <h1>Shopify App</h1>
+          <p>This app needs to be accessed through Shopify.</p>
+          <p>Please install and access this app through your Shopify admin panel.</p>
+          <p>If you're a developer, make sure to access the app with a shop parameter: <code>?shop=your-store.myshopify.com</code></p>
+        </body>
+      </html>
+    `);
+  }
+}, async (req, res, next) => {
   return res
     .status(200)
     .set("Content-Type", "text/html")
-    .set("ngrok-skip-browser-warning", "true") // Add header here too
     .send(
       readFileSync(join(STATIC_PATH, "index.html"))
         .toString()
