@@ -13,8 +13,11 @@
     "node": ">=16.13.0"
   },
   "dependencies": {
+    "@shopify/shopify-api": "^11.14.1",
     "@shopify/shopify-app-express": "^5.0.8",
+    "@shopify/shopify-app-session-storage-mongodb": "^4.0.20",
     "@shopify/shopify-app-session-storage-sqlite": "^4.0.8",
+    "axios": "^1.10.0",
     "compression": "^1.7.4",
     "cross-env": "^7.0.3",
     "mongoose": "^8.16.4",

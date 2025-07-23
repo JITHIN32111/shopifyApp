@@ -34,6 +34,8 @@ export const getTimer = async (req, res) => {
 
 // Create a new timer
 export const createTimer = async (req, res) => {
+  console.log(":::::::::::::::::::::::::::::::::::::::::");
+  
     console.log(req.body);
     
   try {

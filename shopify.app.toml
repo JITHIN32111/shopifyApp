@@ -3,7 +3,7 @@
 client_id = "d45af4c8b320f028b09ef266aa78775e"
 name = "kkk"
 handle = "kkk-12"
-application_url = "https://employ-egypt-director-families.trycloudflare.com"
+application_url = "https://norwegian-la\ck-drunk-irc.trycloudflare.com"
 embedded = true
 
 [build]
@@ -18,7 +18,7 @@ api_version = "2025-07"
 scopes = "write_products"
 
 [auth]
-redirect_urls = ["https://employ-egypt-director-families.trycloudflare.com/auth/callback", "https://employ-egypt-director-families.trycloudflare.com/auth/shopify/callback", "https://employ-egypt-director-families.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://norwegian-la\ck-drunk-irc.trycloudflare.com/auth/callback", "https://norwegian-la\ck-drunk-irc.trycloudflare.com/auth/shopify/callback", "https://norwegian-la\ck-drunk-irc.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false

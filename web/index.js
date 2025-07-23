@@ -45,10 +45,11 @@ app.post(
 
 // If you are adding routes outside of the /api path, remember to
 // also add a proxy rule for them in web/frontend/vite.config.js
-app.use("/api/counter", timerRoutes);
 app.use("/api/*", shopify.validateAuthenticatedSession());
 
+
 app.use(express.json());
+app.use("/api/counter", timerRoutes);
 
 app.get("/api/products/count", async (_req, res) => {
   const client = new shopify.api.clients.Graphql({
@@ -66,6 +67,43 @@ app.get("/api/products/count", async (_req, res) => {
   res.status(200).send({ count: countData.data.productsCount.count });
 });
 
+
+app.get("/api/products", async (req, res) => {
+  console.log("MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM");
+  
+  const shop = req.query.shop;
+console.log(shop);
+
+  if (!shop) return res.status(400).send("Missing shop parameter");
+
+  const session = await shopify.sessionStorage.loadOfflineSession(shop);
+  if (!session) return res.status(401).send("Unauthorized");
+
+  const client = new shopify.api.clients.Graphql({
+    session,
+  });
+
+  const query = `{
+    products(first: 5) {
+      edges {
+        node {
+          id
+          handle
+        }
+      }
+    }
+  }`;
+
+  try {
+    const response = await client.query({ data: { query } });
+    res.status(200).json(response.body.data.products.edges);
+  } catch (error) {
+    console.error("Failed to fetch products:", error);
+    res.status(500).send("Error fetching products");
+  }
+});
+
+
 app.post("/api/products", async (_req, res) => {
   let status = 200;
   let error = null;
@@ -79,6 +117,36 @@ app.post("/api/products", async (_req, res) => {
   }
   res.status(status).send({ success: status === 200, error });
 });
+app.get('/api/debug-session', async (req, res) => {
+  console.log("((((((((((((((((((((((((((((((((((((((((((((((");
+  
+  const shop = req.query.shop;
+
+  if (!shop) {
+    return res.status(400).json({ error: 'Missing shop query param' });
+  }
+
+  try {
+    const session = await shopify.api.session.storage.findByShop(shop);
+
+    if (!session) {
+      return res.status(404).json({ error: 'No session found for this shop' });
+    }
+
+    console.log("✅ Access token for shop:", shop, session.accessToken);
+
+    res.status(200).json({
+      shop: session.shop,
+      accessToken: session.accessToken,
+      scope: session.scope,
+      isOnline: session.isOnline,
+    });
+  } catch (err) {
+    console.error("❌ Error retrieving session:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 
 app.use(shopify.cspHeaders());
 app.use(serveStatic(STATIC_PATH, { index: false }));
@@ -189,6 +257,7 @@ app.use("/*", async (req, res, next) => {
         .replace("%VITE_SHOPIFY_API_KEY%", process.env.SHOPIFY_API_KEY || "")
     );
 });
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend is running on http://localhost:${PORT}`);

@@ -39,4 +39,7 @@ export default defineConfig({
     port: parseInt(process.env.VITE_FRONTEND_PORT) || 5173,
     hmr: hmrConfig,
   },
+    proxy: {
+    '/api': 'http://localhost:3000',
+    }
 })
